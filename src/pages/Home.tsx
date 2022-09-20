@@ -1,40 +1,38 @@
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import {
-  setCategotyId,
-  setCurrentPage,
-  setFilter,
-} from "../redux/slice/filterSlice";
-import { fetchPizzas } from "../redux/slice/pizzaSlice";
+import { useSelector} from "react-redux";
 
 import qs from "qs";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Categories from "../component/Categories";
 import Pagination from "../component/Pagination";
 import PizzaBlock from "../component/PizzaBlock";
 import Skeleton from "../component/PizzaBlock/Skeleton";
-import Sort, { sortNames } from "../component/Sort";
+import Sort, { sortList } from "../component/Sort";
+import { useAppDispatch } from "../redux/store";
+import { selectFilter } from "../redux/slice/filter/selectors";
+import { selectPizzaData } from "../redux/slice/pizza/selectors";
+import { setCategotyId, setCurrentPage, setFilters } from "../redux/slice/filter/slice";
+import { fetchPizzas } from "../redux/slice/pizza/slice";
+import { SearchPizzaParams } from "../redux/slice/pizza/types";
 
-function Home() {
-  const dispatch = useDispatch();
+const Home: React.FC=()=> {
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const isSearch = React.useRef(false);
   const isMounted = React.useRef(false);
 
-  const { categoryId, sort, currentPage, searchValue } = useSelector(
-    (state) => state.filter
-  );
-  const { items, status } = useSelector((state) => state.pizza);
+  const { categoryId, sort, currentPage, searchValue } = useSelector(selectFilter);
+  const { items, status } = useSelector(selectPizzaData);
 
   const sortType = sort.sortProperty;
 
-  function onChangeCategory(id) {
+  const onChangeCategory=React.useCallback((id:number)=> {
     dispatch(setCategotyId(id));
-  }
+  },[])
 
-  function onChangePage(number) {
-    dispatch(setCurrentPage(number));
+  function onChangePage(page:number) {
+    dispatch(setCurrentPage(page));
   }
 
   const getPizzas = async () => {
@@ -50,16 +48,21 @@ function Home() {
 
   React.useEffect(() => {
     if (window.location.search) {
-      const params = qs.parse(window.location.search.substring(1));
+      const params= qs.parse(window.location.search.substring(1)) as unknown as SearchPizzaParams;
 
-      const sort = sortNames.find(
-        (obj) => obj.sortProperty === params.sortType
+      const sort = sortList.find(
+        (obj) => obj.sortProperty === params.sortBy
       );
-
-      dispatch(setFilter({ ...params, sort }));
-      isSearch.current = true;
+      
+      dispatch(setFilters({ 
+        categoryId: Number(params.category),
+        searchValue: params.search,
+        currentPage: params.currentPage,
+        sort: sort || sortList[0]},));
+      
     }
-  }, [dispatch]);
+isMounted.current = true;
+  }, []);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -73,22 +76,24 @@ function Home() {
 
   React.useEffect(() => {
     if (isMounted.current) {
-      const queryString = qs.stringify({
-        sortType,
-        categoryId,
-        currentPage,
-      });
 
+      const params = {categoryId:categoryId>0 ? categoryId : null,
+        sortType: sort.sortProperty,
+      currentPage,}
+
+      const queryString = qs.stringify(params, {skipNulls: true})
       navigate(`?${queryString}`);
     }
+if(!window.location.search){
+  dispatch(fetchPizzas({} as SearchPizzaParams))
+}
+
     isMounted.current = true;
   }, [categoryId, sortType, currentPage]);
 
   const pizzas = items.map((obj) => (
-    <Link key={obj.id} to={`/pizza/${obj.id}`}>
-      <PizzaBlock {...obj} />
-    </Link>
-  ));
+          <PizzaBlock key={obj.id} sizes={[]} types={[]} {...obj} />
+      ));
   const skeletons = [...new Array(4)].map((_, index) => (
     <Skeleton key={index} />
   ));
@@ -96,10 +101,10 @@ function Home() {
     <>
       <div className="content__top">
         <Categories
-          categoryId={categoryId}
+          value={categoryId}
           onChangeCategory={onChangeCategory}
         />
-        <Sort />
+        <Sort value={sort} />
       </div>
       <h2 className="content__title">Все пиццы</h2>
 

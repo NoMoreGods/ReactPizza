@@ -1,14 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-
 import "./styles/Header.scss";
 import Logo from "../images/logo.svg";
 import Search from "./Search/index";
+import { RootState } from "../redux/store";
 
-const Header = () => {
-  const { items, totalPrice } = useSelector((state) => state.cart);
-  const totalCount = items.reduce((sum, item) => sum + item.count, 0);
+const Header: React.FC = () => {
+  const { items, totalPrice } = useSelector((state:RootState) => state.cart);
+  const totalCount = items.reduce((sum: number, item: any) => sum + item.count, 0);
+
+  const isMounted = React.useRef(false);
+  
+  React.useEffect(()=>{
+    if(isMounted.current){
+    const json = JSON.stringify(items);
+    localStorage.setItem('cart', json)};
+
+    isMounted.current = true;
+  },[items])
 
   return (
     <div className="header">

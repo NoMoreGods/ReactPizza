@@ -1,7 +1,11 @@
 import React from "react";
 import "./styles/Categories.scss";
 
-function Categories({ categoryId, onChangeCategory }) {
+type CategoriesProps={
+  value: number,
+  onChangeCategory: (idx:number)=>void,
+}
+const Categories: React.FC <CategoriesProps>=React.memo(({ value, onChangeCategory }) =>{
   let categories = [
     "Все",
     "Мясные",
@@ -19,7 +23,7 @@ function Categories({ categoryId, onChangeCategory }) {
             <li
               key={idx}
               onClick={() => onChangeCategory(idx)}
-              className={categoryId === idx ? "active" : ""}
+              className={value === idx ? "active" : ""}
             >
               {categoryName}
             </li>
@@ -29,5 +33,5 @@ function Categories({ categoryId, onChangeCategory }) {
     </div>
   );
 }
-
+)
 export default Categories;
